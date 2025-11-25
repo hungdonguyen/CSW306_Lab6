@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using CSW306_Lab6.Services;
+using CSW306_Lab6.Data;
 using System.Linq;
 
 namespace CSW306_Lab6.Controllers
@@ -9,10 +10,12 @@ namespace CSW306_Lab6.Controllers
  public class ChatController : ControllerBase
  {
  private readonly ConnectionManager _connectionManager;
+ private readonly ChatDbContext _db;
 
- public ChatController(ConnectionManager connectionManager)
+ public ChatController(ConnectionManager connectionManager, ChatDbContext db)
  {
  _connectionManager = connectionManager;
+ _db = db;
  }
 
  [HttpPost("join")]
@@ -38,6 +41,17 @@ namespace CSW306_Lab6.Controllers
  return Ok(users);
  }
 
+ [HttpGet("history")]
+ public IActionResult GetChatHistory()
+ {
+ // Tr? v? t?i ða100 tin nh?n g?n nh?t, s?p x?p theo th?i gian gi?m d?n
+ var messages = _db.ChatMessages
+ .OrderByDescending(m => m.Timestamp)
+ .Take(100)
+ .ToList();
+ return Ok(messages);
+ }
+ 
  public class JoinRoomRequest
  {
  public string RoomName { get; set; }

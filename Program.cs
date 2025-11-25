@@ -1,6 +1,7 @@
 ﻿using CSW306_Lab6.Data; // Thêm ở đầu file
 using CSW306_Lab6.Hubs;
 using CSW306_Lab6.Services;
+using Microsoft.EntityFrameworkCore; // Đầu file Program.cs
 
 var builder = WebApplication.CreateBuilder(args);
 
