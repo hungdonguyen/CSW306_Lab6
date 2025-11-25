@@ -8,14 +8,31 @@
 <div class="container mt-5">
  <div class="row p-1">
  <div class="col-1">User:</div>
- <div class="col-5"><input type="text" id="userInput" class="form-control" /></div>
+ <div class="col-5">
+ <!-- Ô hi?n th? tên ngý?i dùng, ch? ð?c -->
+ <input type="text" id="userInput" class="form-control" readonly />
  </div>
+ </div>
+ 
+ <div class="row p-1">
+ <div class="col-1">To:</div>
+ <div class="col-5 d-flex">
+ <!-- Danh sách user online ð? ch?n g?i tin nh?n riêng -->
+ <select id="userSelect" class="form-select me-2">
+ <option value="">-- Broadcast (All) --</option>
+ </select>
+ <!-- Nút làm m?i danh sách user online -->
+ <button id="refreshUsersBtn" class="btn btn-sm btn-outline-secondary">Refresh Users</button>
+ </div>
+ </div>
+
  <div class="row p-1">
  <div class="col-1">Message:</div>
  <div class="col-5"><input type="text" id="messageInput" class="form-control" /></div>
  </div>
  <div class="row p-1">
  <div class="col-6 text-end">
+ <!-- Nút g?i tin nh?n -->
  <input type="button" id="sendButton" value="Send Message" class="btn btn-primary" />
  </div>
  </div>
@@ -26,18 +43,22 @@
  </div>
  <div class="row p-1">
  <div class="col-6">
+ <!-- Danh sách hi?n th? các tin nh?n -->
  <ul id="messagesList" class="list-group"></ul>
  </div>
  </div>
+ 
  <div class="row p-1">
  <div class="col-1">Room:</div>
  <div class="col-3">
+ <!-- Ch?n ph?ng chat nhóm -->
  <select id="roomSelect" class="form-select">
  <option value="Room1">Room1</option>
  <option value="Room2">Room2</option>
  </select>
  </div>
  <div class="col-2">
+ <!-- Nút tham gia/r?i ph?ng nhóm -->
  <button id="joinRoomBtn" class="btn btn-success">Join Room</button>
  <button id="leaveRoomBtn" class="btn btn-danger">Leave Room</button>
  </div>
@@ -47,60 +68,109 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
 
 <script>
- //1. T?o k?t n?i ð?n Hub
- var connection = new signalR.HubConnectionBuilder().withUrl("/chathub").build();
+ //1. Nh?p tên ngý?i dùng khi vào trang, dùng cho m?i ch?c nãng chat
+ var myUser = prompt("Nh?p tên c?a b?n (Username):", "User1");
+ if (!myUser) myUser = "User" + Math.floor(Math.random() *1000);
+ document.getElementById("userInput").value = myUser;
+
+ //2. T?o k?t n?i SignalR, g?i username lên server qua query string
+ var connection = new signalR.HubConnectionBuilder()
+ .withUrl("/chathub?username=" + myUser)
+ .build();
 
  // Vô hi?u hóa nút g?i cho ð?n khi k?t n?i thành công
  document.getElementById("sendButton").disabled = true;
 
- //2. L?ng nghe s? ki?n "ReceiveMessage" t? Server
+ // --- X? L? S? KI?N NH?N TIN NH?N ---
+
+ // Nh?n tin nh?n broadcast ho?c nhóm
  connection.on("ReceiveMessage", function (user, message) {
  var li = document.createElement("li");
+ li.className = "list-group-item";
+ li.textContent = `${user}: ${message}`;
  document.getElementById("messagesList").appendChild(li);
- // Hi?n th? tin nh?n: "User says message"
- li.textContent = `${user} says ${message}`;
  });
 
- //3. B?t ð?u k?t n?i
+ // Nh?n tin nh?n riêng (private chat)
+ connection.on("ReceivePrivateMessage", function (user, message) {
+ var li = document.createElement("li");
+ li.className = "list-group-item list-group-item-warning"; // Màu vàng ð? n?i b?t
+ li.textContent = `[Private from ${user}]: ${message}`;
+ document.getElementById("messagesList").appendChild(li);
+ });
+
+ //3. B?t ð?u k?t n?i, sau khi k?t n?i th? kích ho?t nút g?i và t?i danh sách user online
  connection.start().then(function () {
  document.getElementById("sendButton").disabled = false;
+ loadOnlineUsers(); // T?i danh sách user online ngay khi k?t n?i
  }).catch(function (err) {
  return console.error(err.toString());
  });
 
- //4. X? l? s? ki?n click nút G?i
- document.getElementById("sendButton").addEventListener("click", function (event) {
- var user = document.getElementById("userInput").value;
- var message = document.getElementById("messageInput").value;
+ // --- LOGIC G?I TIN NH?N ---
+ let currentRoom = null; // Bi?n lýu ph?ng hi?n t?i n?u ðang ? ch? ð? nhóm
 
- // G?i hàm "SendMessage" trên Server
- connection.invoke("SendMessage", user, message).catch(function (err) {
- return console.error(err.toString());
- });
+ document.getElementById("sendButton").addEventListener("click", function (event) {
+ var message = document.getElementById("messageInput").value;
+ var receiverId = document.getElementById("userSelect").value; // L?y ConnectionId ngý?i nh?n
+
+ //1. N?u ch?n ngý?i nh?n th? g?i tin nh?n riêng
+ if (receiverId) {
+ connection.invoke("SendPrivateMessage", receiverId, myUser, message)
+ .catch(err => console.error(err.toString()));
+ } 
+ //2. N?u ðang ? ph?ng nhóm th? g?i tin nh?n nhóm
+ else if (currentRoom) {
+ connection.invoke("SendGroupMessage", currentRoom, myUser, message)
+ .catch(err => console.error(err.toString()));
+ } 
+ //3. N?u không ch?n g? th? g?i broadcast cho t?t c?
+ else {
+ connection.invoke("SendMessage", myUser, message)
+ .catch(err => console.error(err.toString()));
+ }
  event.preventDefault();
  });
 
- let currentRoom = null;
+ // --- HÀM T?I DANH SÁCH USER ONLINE ---
+ async function loadOnlineUsers() {
+ try {
+ const response = await fetch('/api/chat/users');
+ const users = await response.json();
+ const userSelect = document.getElementById("userSelect");
+ // Gi? l?i option m?c ð?nh ð?u tiên
+ userSelect.innerHTML = '<option value="">-- Broadcast (All) --</option>';
+ users.forEach(u => {
+ // Không hi?n chính m?nh trong danh sách g?i
+ if (u.username !== myUser) { 
+ const option = document.createElement("option");
+ option.value = u.connectionId;
+ option.text = u.username;
+ userSelect.appendChild(option);
+ }
+ });
+ } catch (error) {
+ console.error("L?i t?i danh sách user:", error);
+ }
+ }
 
+ // Nút làm m?i danh sách user online th? công
+ document.getElementById("refreshUsersBtn").onclick = loadOnlineUsers;
+
+ // --- LOGIC CHAT NHÓM ---
  document.getElementById("joinRoomBtn").onclick = function() {
  const room = document.getElementById("roomSelect").value;
- const user = document.getElementById("userInput").value;
- connection.invoke("JoinGroup", room, user);
+ connection.invoke("JoinGroup", room, myUser);
  currentRoom = room;
+ document.getElementById("userSelect").value = ""; // Reset ch?n user riêng khi vào room
+ alert(`Ð? vào ch? ð? chat nhóm: ${room}`);
  };
 
  document.getElementById("leaveRoomBtn").onclick = function() {
- const room = currentRoom;
- const user = document.getElementById("userInput").value;
- connection.invoke("LeaveGroup", room, user);
+ if(currentRoom){
+ connection.invoke("LeaveGroup", currentRoom, myUser);
  currentRoom = null;
- };
-
- document.getElementById("sendButton").onclick = function() {
- const user = document.getElementById("userInput").value;
- const message = document.getElementById("messageInput").value;
- if (currentRoom) {
- connection.invoke("SendGroupMessage", currentRoom, user, message);
+ alert("Ð? r?i nhóm. Quay l?i ch? ð? Broadcast.");
  }
  };
 </script>
