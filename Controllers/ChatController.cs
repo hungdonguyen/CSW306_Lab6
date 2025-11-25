@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using CSW306_Lab6.Services;
 using CSW306_Lab6.Data;
+using CSW306_Lab6.Models;
 using System.Linq;
 
 namespace CSW306_Lab6.Controllers
@@ -44,9 +45,9 @@ namespace CSW306_Lab6.Controllers
  [HttpGet("history")]
  public IActionResult GetChatHistory()
  {
- // Tr? v? t?i ğa100 tin nh?n g?n nh?t, s?p x?p theo th?i gian gi?m d?n
+ // Tr? v? t?i ğa100 tin nh?n, s?p x?p t? c? ğ?n m?i
  var messages = _db.ChatMessages
- .OrderByDescending(m => m.Timestamp)
+ .OrderBy(m => m.Timestamp)
  .Take(100)
  .ToList();
  return Ok(messages);
