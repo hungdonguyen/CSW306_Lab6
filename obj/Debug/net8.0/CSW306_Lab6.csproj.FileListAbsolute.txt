@@ -35,3 +35,4 @@ C:\Users\Maytinh\Desktop\CSW306\CSW306_Lab6\CSW306_Lab6\obj\Debug\net8.0\refint\
 C:\Users\Maytinh\Desktop\CSW306\CSW306_Lab6\CSW306_Lab6\obj\Debug\net8.0\CSW306_Lab6.pdb
 C:\Users\Maytinh\Desktop\CSW306\CSW306_Lab6\CSW306_Lab6\obj\Debug\net8.0\CSW306_Lab6.genruntimeconfig.cache
 C:\Users\Maytinh\Desktop\CSW306\CSW306_Lab6\CSW306_Lab6\obj\Debug\net8.0\ref\CSW306_Lab6.dll
+C:\Users\Maytinh\Desktop\CSW306\CSW306_Lab6\CSW306_Lab6\obj\Debug\net8.0\CSW306_Lab6.sourcelink.json

@@ -32,6 +32,16 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "CSW306_Lab6.Controllers.ChatController",
+    "Method": "GetOnlineUsers",
+    "RelativePath": "api/Chat/users",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "CSW306_Lab6.Controllers.WeatherForecastController",
     "Method": "Get",
     "RelativePath": "WeatherForecast",

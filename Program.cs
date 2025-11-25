@@ -1,4 +1,5 @@
 using CSW306_Lab6.Hubs;
+using CSW306_Lab6.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,7 @@ builder.Services.AddRazorPages(); // Added Razor Pages
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR(); //
+builder.Services.AddSingleton<ConnectionManager>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

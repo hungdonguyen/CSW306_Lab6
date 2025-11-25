@@ -41,13 +41,24 @@
  <button id="leaveRoomBtn" class="btn btn-danger">Leave Room</button>
  </div>
  </div>
+ <div class="row p-1">
+ <div class="col-1">Send To:</div>
+ <div class="col-3">
+ <select id="userSelect" class="form-select">
+ <option value="">-- Broadcast (All) --</option>
+ </select>
+ </div>
+ </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
 
 <script>
+    var username = prompt("Enter your name:", "User1");
     // 1. Tạo kết nối đến Hub
-    var connection = new signalR.HubConnectionBuilder().withUrl("/chathub").build();
+    var connection = new signalR.HubConnectionBuilder()
+        .withUrl("/chathub?username=" + username)
+        .build();
 
     // Vô hiệu hóa nút gửi cho đến khi kết nối thành công
     document.getElementById("sendButton").disabled = true;
@@ -60,6 +71,13 @@
         li.textContent = `${user} says ${message}`;
     });
 
+    connection.on("ReceivePrivateMessage", function (user, message) {
+       var li = document.createElement("li");
+       li.textContent = `[Private from ${user}]: ${message}`;
+       li.style.color = "red";
+       document.getElementById("messagesList").appendChild(li);
+   });
+
     // 3. Bắt đầu kết nối
     connection.start().then(function () {
         document.getElementById("sendButton").disabled = false;
@@ -69,15 +87,17 @@
 
     // 4. Xử lý sự kiện click nút Gửi
     document.getElementById("sendButton").addEventListener("click", function (event) {
-        var user = document.getElementById("userInput").value;
         var message = document.getElementById("messageInput").value;
-
-        // Gọi hàm "SendMessage" trên Server
-        connection.invoke("SendMessage", user, message).catch(function (err) {
-            return console.error(err.toString());
-        });
-        event.preventDefault();
-    });
+        var receiverId = document.getElementById("userSelect").value;
+        if (receiverId) {
+               connection.invoke("SendPrivateMessage", receiverId, username, message)
+                   .catch(err => console.error(err.toString()));
+           } else {
+               connection.invoke("SendMessage", username, message)
+                   .catch(err => console.error(err.toString()));
+           }
+           event.preventDefault();
+       });
 
     let currentRoom = null;
 
@@ -102,4 +122,21 @@
             connection.invoke("SendGroupMessage", currentRoom, user, message);
         }
     };
+
+    async function loadOnlineUsers() {
+       const response = await fetch('/api/chat/users');
+       const users = await response.json();
+       const userSelect = document.getElementById("userSelect");
+       userSelect.innerHTML = '<option value="">-- Broadcast (All) --</option>';
+       users.forEach(u => {
+           if (u.username !== username) {
+               const option = document.createElement("option");
+               option.value = u.connectionId;
+               option.text = u.username;
+               userSelect.appendChild(option);
+           }
+       });
+   }
+
+   loadOnlineUsers();
 </script>
