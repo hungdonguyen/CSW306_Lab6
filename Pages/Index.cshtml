@@ -103,9 +103,42 @@
  connection.start().then(function () {
  document.getElementById("sendButton").disabled = false;
  loadOnlineUsers(); // T?i danh sách user online ngay khi k?t n?i
+ loadChatHistory(); // T?i danh sách tin nh?n ngay khi k?t n?i
  }).catch(function (err) {
  return console.error(err.toString());
  });
+
+ // --- HÀM T?I DANH SÁCH L?CH S? CHAT ---
+ async function loadChatHistory() {
+ try {
+ const response = await fetch('/api/chat/history');
+ const messages = await response.json();
+ const list = document.getElementById("messagesList");
+ list.innerHTML = '';
+ messages.forEach(msg => {
+ let cssClass = "list-group-item";
+ let displayMsg = msg.message;
+ if (msg.receiver) {
+ cssClass = "list-group-item list-group-item-warning";
+ displayMsg = `[Private] ${msg.message}`;
+ } else if (msg.groupName) {
+ displayMsg = `[Nhóm ${msg.groupName}] ${msg.message}`;
+ }
+ const time = new Date(msg.timestamp).toLocaleTimeString();
+ appendMessage(msg.sender, `${displayMsg} (${time})`, cssClass);
+ });
+ } catch (error) {
+ console.error("L?i t?i l?ch s? chat:", error);
+ }
+ }
+
+ // Hàm ph? tr? thêm tin nh?n vào danh sách
+ function appendMessage(user, message, cssClass) {
+ var li = document.createElement("li");
+ li.className = cssClass;
+ li.textContent = `${user}: ${message}`;
+ document.getElementById("messagesList").appendChild(li);
+ }
 
  // --- LOGIC G?I TIN NH?N ---
  let currentRoom = null; // Bi?n lýu ph?ng hi?n t?i n?u ðang ? ch? ð? nhóm
