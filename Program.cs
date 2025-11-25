@@ -1,3 +1,4 @@
+﻿using CSW306_Lab6.Data; // Thêm ở đầu file
 using CSW306_Lab6.Hubs;
 using CSW306_Lab6.Services;
 
@@ -11,6 +12,11 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR(); //
 builder.Services.AddSingleton<ConnectionManager>();
+
+// Đăng ký DbContext với chuỗi kết nối
+builder.Services.AddDbContext<ChatDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
